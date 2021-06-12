@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>4d Sport Boxing Online Head Editor 1.0</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <link type="text/css" rel="stylesheet" href="main.css">
+        <style>
+			body {
+				background-color: #f0f0f0;
+				color: #f2f2f2;
+			}
+			a {
+				color: #08f;
+			}
+		</style>
+		<script src="./data/head.js" ></script>
+	</head>
+	<body>
+		
+		<input type="file" id="file-selector" accept=".dat">
+       
+        <div id="info">
+			<a href="https://postcode-x.web.app" target="_blank" rel="noopener">postcode-x</a><br />
+			"Head Viewer" para el juego <strong>4D Sports Boxing</strong><br />
+			Usa control "currentFace" para ver distintas expresiones
+		</div>
+
+        <div id="container"></div>
+		<script type="module">
+
+			import * as THREE from '../build/three.module.js';
+			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            import { GUI } from './jsm/libs/dat.gui.module.js';
+
+			let group;
+			let container;
+			let camera, scene, renderer;
+
+			let vertexBuffer, meshBuffer;
+			let pointCloud;
+			let mesh;
+
+			let pointsPerHead
+			let meshFaceCount = 0;
+
+			const r = 256;
+
+			const effectController = {
+				showDots: true,
+				showMesh: true,
+				disableCamera: true,
+                currentFace: 1
+			};
+
+            let headVertices;
+            let fileSize;
+
+			init();
+			animate();
+	
+			function init() {
+
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.z = 550;
+
+				const controls = new OrbitControls( camera, container );
+				controls.minDistance = 100;
+				controls.maxDistance = 550;
+
+                const gui = new GUI();
+
+                gui.add( effectController, "showDots" ).onChange( function ( value ) {
+
+                    pointCloud.visible = value;
+
+                } );
+                gui.add( effectController, "showMesh" ).onChange( function ( value ) {
+
+                    mesh.visible = value;
+
+                } );
+                gui.add( effectController, "disableCamera").onChange( function (value) {
+
+                    controls.enabled = value;
+
+                });
+                gui.add( effectController, "currentFace", 1, 5, 1).onChange( function(value){
+					if (vertexBuffer != null){
+						let startVertex = (value - 1) * pointsPerHead;
+						let startMesh = (value - 1) * meshFaceCount * 3;
+						if (startVertex != vertexBuffer.drawRange.start){
+							vertexBuffer.setDrawRange( startVertex , pointsPerHead );
+							meshBuffer.setDrawRange( startMesh, 3 * meshFaceCount );
+							// console.log(meshBuffer.drawRange);
+						}
+					}
+                });
+
+				scene = new THREE.Scene();
+
+				group = new THREE.Group();
+				scene.add( group );
+
+				const light = new THREE.HemisphereLight();
+				scene.add( light );
+
+				const helper = new THREE.BoxHelper( new THREE.Mesh( new THREE.BoxGeometry( r, r, r ) ) );
+				helper.material.color.setHex( 0x101010 );
+				helper.material.blending = THREE.AdditiveBlending;
+				helper.material.transparent = true;
+				group.add( helper );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+
+				container.appendChild( renderer.domElement );
+                window.addEventListener( 'resize', onWindowResize );   
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+            function loadGeometries(filename){
+
+				const pMaterial = new THREE.PointsMaterial( {
+					color: 0xFFFFFF,
+					size: 3,
+					blending: THREE.AdditiveBlending,
+					transparent: true,
+					sizeAttenuation: false
+				} );
+				
+				if (vertexBuffer != null) {
+					vertexBuffer.dispose();			
+				}
+
+				vertexBuffer = new THREE.BufferGeometry();
+				vertexBuffer.setDrawRange( 0, pointsPerHead );
+				vertexBuffer.setAttribute( 'position', new THREE.BufferAttribute( headVertices, 3 ).setUsage( THREE.DynamicDrawUsage ) );
+
+				pointCloud = new THREE.Points( vertexBuffer, pMaterial );
+
+				for ( let i = 0; i < group.children.length ; i++ ){
+					if (group.children[i].type == 'Points'){
+						group.children[i].removeFromParent();
+					}
+				}
+				
+				group.add( pointCloud );
+
+				// console.log(group.children[group.children.length - 1].type, group.children);
+
+				let headData = headShapes[filename.toLowerCase().replace('.dat','')];
+				const indices = [];
+				const groupColor = [];
+				meshFaceCount = 0;
+
+				for ( let i = 0; i < headData.length / 18 ; i++ ){
+
+					if(parseInt(headData[18*i + 7]) == 3){
+
+						indices.push(parseInt(headData[18*i + 8]));
+						indices.push(parseInt(headData[18*i + 9]));
+						indices.push(parseInt(headData[18*i + 10]));
+
+						groupColor.push(parseInt(headData[18*i + 4]));
+
+						meshFaceCount += 1;
+
+					}else{
+
+						indices.push(parseInt(headData[18*i + 8]));
+						indices.push(parseInt(headData[18*i + 9]));
+						indices.push(parseInt(headData[18*i + 10]));
+
+						groupColor.push(parseInt(headData[18*i + 4]));
+
+						indices.push(parseInt(headData[18*i + 8]));
+						indices.push(parseInt(headData[18*i + 10]));
+						indices.push(parseInt(headData[18*i + 11]));
+
+						groupColor.push(parseInt(headData[18*i + 4]));
+
+						meshFaceCount += 2;
+		
+					}
+				
+				}
+
+				const positions = [];
+				const normals = [];
+				const colors = [];
+
+				const color = new THREE.Color();
+
+				const pA = new THREE.Vector3();
+				const pB = new THREE.Vector3();
+				const pC = new THREE.Vector3();
+
+				const cb = new THREE.Vector3();
+				const ab = new THREE.Vector3();
+
+				const numFaces = 5;
+				
+				for ( let j = 0; j < numFaces; j++ ){
+
+					for ( let i = 0; i < indices.length / 3; i++ ){
+
+						const offset = j * pointsPerHead * 3;
+
+						const ax = headVertices[3*indices[3*i] + offset];
+						const ay = headVertices[3*indices[3*i] + 1 + offset];
+						const az = headVertices[3*indices[3*i] + 2 + offset];
+
+						const bx = headVertices[3*indices[3*i + 1] + offset];
+						const by = headVertices[3*indices[3*i + 1] + 1 + offset];
+						const bz = headVertices[3*indices[3*i + 1] + 2 + offset];
+
+						const cx = headVertices[3*indices[3*i + 2] + offset];
+						const cy = headVertices[3*indices[3*i + 2] + 1 + offset];
+						const cz = headVertices[3*indices[3*i + 2] + 2 + offset];
+
+						positions.push( ax, ay, az );
+						positions.push( bx, by, bz );
+						positions.push( cx, cy, cz );
+
+						// flat face normals
+
+						pA.set( ax, ay, az );
+						pB.set( bx, by, bz );
+						pC.set( cx, cy, cz );
+
+						cb.subVectors( pC, pB );
+						ab.subVectors( pA, pB );
+						cb.cross( ab );
+
+						cb.normalize();
+
+						const nx = cb.x;
+						const ny = cb.y;
+						const nz = cb.z;
+
+						normals.push( nx, ny, nz );
+						normals.push( nx, ny, nz );
+						normals.push( nx, ny, nz );
+
+						// colors
+
+						const vx = 0.4 + groupColor[i] / 256;
+						const vy = 0.2 + groupColor[i] / 256;
+						const vz = 0.8 + groupColor[i] / 256;
+
+						color.setRGB( vx, vy, vz );
+
+						const alpha = 0.75;
+
+						colors.push( color.r, color.g, color.b, alpha );
+						colors.push( color.r, color.g, color.b, alpha );
+						colors.push( color.r, color.g, color.b, alpha );
+
+					}
+
+				}
+
+				if (meshBuffer != null) {
+					meshBuffer.dispose();			
+				}
+
+				meshBuffer = new THREE.BufferGeometry();
+				meshBuffer.setDrawRange( 0, 3 * meshFaceCount ); // 120 = 3 * num faces
+				meshBuffer.setAttribute( 'position', new THREE.Int16BufferAttribute( positions, 3 ));
+				meshBuffer.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ));
+				meshBuffer.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 4 ));
+
+				meshBuffer.computeBoundingSphere();
+
+				const material = new THREE.MeshPhongMaterial( {
+				color: 0xbcbcbc, specular: 0xffffff, shininess: 250,
+				side: THREE.DoubleSide, vertexColors: true, transparent: true
+				} );
+
+				mesh = new THREE.Mesh( meshBuffer, material );
+
+				for ( let i = 0; i < group.children.length ; i++ ){
+					if (group.children[i].type == 'Mesh'){
+						group.children[i].removeFromParent();
+					}
+				}
+
+				group.add( mesh );
+
+			}
+
+			function animate() {
+
+				if (pointCloud != null)
+                	pointCloud.geometry.attributes.position.needsUpdate = true;
+
+                requestAnimationFrame( animate );
+                render();
+
+                }
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+            const fileSelector = document.getElementById('file-selector');
+            fileSelector.addEventListener('change', (event) => {
+                
+                const fileList = event.target.files;
+                // console.log(fileList);
+                const fileData = new Blob([fileList[0]]);
+                fileSize = fileList[0].size;
+				pointsPerHead = fileSize / ( 2 * 3 * 5 );
+
+                var reader = new FileReader();
+                reader.readAsArrayBuffer(fileData);
+
+                reader.onload = function() {
+                    var arrayBuffer = reader.result
+                    headVertices = new Int16Array(arrayBuffer);
+                    loadGeometries(fileList[0].name);
+                }
+                
+            });
+
+		</script>
+
+	</body>
+</html>
