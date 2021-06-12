@@ -6,7 +6,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<link type="text/css" rel="stylesheet" href="main.css">
-	<script src="./data/head.js"></script>
+	<script src="./data/head.data.js"></script>
 </head>
 
 <body>
@@ -159,7 +159,9 @@
 			const groupColor = [];
 			meshFaceCount = 0;
 
-			for (let i = 0; i < headData.length / 18; i++) {
+			let hd = [];
+
+			/*for (let i = 0; i < headData.length / 18; i++) {
 
 				if (parseInt(headData[18 * i + 7]) == 3) {
 
@@ -171,6 +173,11 @@
 
 					meshFaceCount += 1;
 
+					hd.push(parseInt(headData[18 * i + 4]));
+					hd.push(parseInt(headData[18 * i + 8]));
+					hd.push(parseInt(headData[18 * i + 9]));
+					hd.push(parseInt(headData[18 * i + 10]));
+
 				} else {
 
 					indices.push(parseInt(headData[18 * i + 8]));
@@ -178,6 +185,11 @@
 					indices.push(parseInt(headData[18 * i + 10]));
 
 					groupColor.push(parseInt(headData[18 * i + 4]));
+
+					hd.push(parseInt(headData[18 * i + 4]));
+					hd.push(parseInt(headData[18 * i + 8]));
+					hd.push(parseInt(headData[18 * i + 9]));
+					hd.push(parseInt(headData[18 * i + 10]));
 
 					indices.push(parseInt(headData[18 * i + 8]));
 					indices.push(parseInt(headData[18 * i + 10]));
@@ -187,8 +199,27 @@
 
 					meshFaceCount += 2;
 
+					hd.push(parseInt(headData[18 * i + 4]));
+					hd.push(parseInt(headData[18 * i + 8]));
+					hd.push(parseInt(headData[18 * i + 10]));
+					hd.push(parseInt(headData[18 * i + 11]));
+
 				}
 
+			}
+
+			console.log(hd);*/
+
+			for (let i = 0; i < headData.length / 4; i++) {
+
+				groupColor.push(parseInt(headData[4 * i]));
+
+				indices.push(parseInt(headData[4 * i + 1]));
+				indices.push(parseInt(headData[4 * i + 2]));
+				indices.push(parseInt(headData[4 * i + 3]));
+
+				meshFaceCount += 1;
+			
 			}
 
 			const positions = [];
