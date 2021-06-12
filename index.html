@@ -1,344 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>4d Sport Boxing Online Head Editor 1.0</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <link type="text/css" rel="stylesheet" href="main.css">
-        <style>
-			body {
-				background-color: #f0f0f0;
-				color: #f2f2f2;
-			}
-			a {
-				color: #08f;
-			}
-		</style>
-		<script src="./data/head.js" ></script>
-	</head>
-	<body>
-		
-		<input type="file" id="file-selector" accept=".dat">
-       
-        <div id="info">
-			<a href="https://postcode-x.web.app" target="_blank" rel="noopener">postcode-x</a><br />
-			"Head Viewer" para el juego <strong>4D Sports Boxing</strong><br />
-			Usa control "currentFace" para ver distintas expresiones
-		</div>
 
-        <div id="container"></div>
-		<script type="module">
+<head>
+	<title>4d Sport Boxing Online Head Editor 1.0</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="main.css">
+	<style>
+		body {
+			background-color: #f0f0f0;
+			color: #f2f2f2;
+		}
 
-			import * as THREE from '../build/three.module.js';
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
-            import { GUI } from './jsm/libs/dat.gui.module.js';
+		a {
+			color: #08f;
+		}
+	</style>
+	<script src="./data/head.js"></script>
+</head>
 
-			let group;
-			let container;
-			let camera, scene, renderer;
+<body>
 
-			let vertexBuffer, meshBuffer;
-			let pointCloud;
-			let mesh;
+	<input type="file" id="file-selector" accept=".dat">
 
-			let pointsPerHead
-			let meshFaceCount = 0;
+	<div id="info">
+		<a href="https://postcode-x.web.app" target="_blank" rel="noopener">postcode-x</a><br />
+		"Head Viewer" para el juego <strong>4D Sports Boxing</strong><br />
+		Usa control "currentFace" para ver distintas expresiones
+	</div>
 
-			const r = 256;
+	<div id="container"></div>
+	<script type="module">
 
-			const effectController = {
-				showDots: true,
-				showMesh: true,
-				disableCamera: true,
-                currentFace: 1
-			};
+		import * as THREE from '../build/three.module.js';
+		import { OrbitControls } from './jsm/controls/OrbitControls.js';
+		import { GUI } from './jsm/libs/dat.gui.module.js';
 
-            let headVertices;
-            let fileSize;
+		let group;
+		let container;
+		let camera, scene, renderer;
 
-			init();
-			animate();
-	
-			function init() {
+		let vertexBuffer, meshBuffer;
+		let pointCloud;
+		let mesh;
 
-				container = document.getElementById( 'container' );
+		let pointsPerHead
+		let meshFaceCount = 0;
 
-				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.z = 550;
+		const r = 256;
 
-				const controls = new OrbitControls( camera, container );
-				controls.minDistance = 100;
-				controls.maxDistance = 550;
+		const effectController = {
+			showDots: true,
+			showMesh: true,
+			disableCamera: true,
+			currentFace: 1
+		};
 
-                const gui = new GUI();
+		let headVertices;
+		let fileSize;
 
-                gui.add( effectController, "showDots" ).onChange( function ( value ) {
+		init();
+		animate();
 
-                    pointCloud.visible = value;
+		function init() {
 
-                } );
-                gui.add( effectController, "showMesh" ).onChange( function ( value ) {
+			container = document.getElementById('container');
 
-                    mesh.visible = value;
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+			camera.position.z = 550;
 
-                } );
-                gui.add( effectController, "disableCamera").onChange( function (value) {
+			const controls = new OrbitControls(camera, container);
+			controls.minDistance = 100;
+			controls.maxDistance = 550;
 
-                    controls.enabled = value;
+			const gui = new GUI();
 
-                });
-                gui.add( effectController, "currentFace", 1, 5, 1).onChange( function(value){
-					if (vertexBuffer != null){
-						let startVertex = (value - 1) * pointsPerHead;
-						let startMesh = (value - 1) * meshFaceCount * 3;
-						if (startVertex != vertexBuffer.drawRange.start){
-							vertexBuffer.setDrawRange( startVertex , pointsPerHead );
-							meshBuffer.setDrawRange( startMesh, 3 * meshFaceCount );
-							// console.log(meshBuffer.drawRange);
-						}
-					}
-                });
+			gui.add(effectController, "showDots").onChange(function (value) {
 
-				scene = new THREE.Scene();
+				pointCloud.visible = value;
 
-				group = new THREE.Group();
-				scene.add( group );
+			});
+			gui.add(effectController, "showMesh").onChange(function (value) {
 
-				const light = new THREE.HemisphereLight();
-				scene.add( light );
+				mesh.visible = value;
 
-				const helper = new THREE.BoxHelper( new THREE.Mesh( new THREE.BoxGeometry( r, r, r ) ) );
-				helper.material.color.setHex( 0x101010 );
-				helper.material.blending = THREE.AdditiveBlending;
-				helper.material.transparent = true;
-				group.add( helper );
+			});
+			gui.add(effectController, "disableCamera").onChange(function (value) {
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.outputEncoding = THREE.sRGBEncoding;
+				controls.enabled = value;
 
-				container.appendChild( renderer.domElement );
-                window.addEventListener( 'resize', onWindowResize );   
-
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-			}
-
-            function loadGeometries(filename){
-
-				const pMaterial = new THREE.PointsMaterial( {
-					color: 0xFFFFFF,
-					size: 3,
-					blending: THREE.AdditiveBlending,
-					transparent: true,
-					sizeAttenuation: false
-				} );
-				
+			});
+			gui.add(effectController, "currentFace", 1, 5, 1).onChange(function (value) {
 				if (vertexBuffer != null) {
-					vertexBuffer.dispose();			
-				}
-
-				vertexBuffer = new THREE.BufferGeometry();
-				vertexBuffer.setDrawRange( 0, pointsPerHead );
-				vertexBuffer.setAttribute( 'position', new THREE.BufferAttribute( headVertices, 3 ).setUsage( THREE.DynamicDrawUsage ) );
-
-				pointCloud = new THREE.Points( vertexBuffer, pMaterial );
-
-				for ( let i = 0; i < group.children.length ; i++ ){
-					if (group.children[i].type == 'Points'){
-						group.children[i].removeFromParent();
+					let startVertex = (value - 1) * pointsPerHead;
+					let startMesh = (value - 1) * meshFaceCount * 3;
+					if (startVertex != vertexBuffer.drawRange.start) {
+						vertexBuffer.setDrawRange(startVertex, pointsPerHead);
+						meshBuffer.setDrawRange(startMesh, 3 * meshFaceCount);
+						// console.log(meshBuffer.drawRange);
 					}
 				}
-				
-				group.add( pointCloud );
+			});
 
-				// console.log(group.children[group.children.length - 1].type, group.children);
+			scene = new THREE.Scene();
 
-				let headData = headShapes[filename.toLowerCase().replace('.dat','')];
-				const indices = [];
-				const groupColor = [];
-				meshFaceCount = 0;
+			group = new THREE.Group();
+			scene.add(group);
 
-				for ( let i = 0; i < headData.length / 18 ; i++ ){
+			const light = new THREE.HemisphereLight();
+			scene.add(light);
 
-					if(parseInt(headData[18*i + 7]) == 3){
+			const helper = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(r, r, r)));
+			helper.material.color.setHex(0x101010);
+			helper.material.blending = THREE.AdditiveBlending;
+			helper.material.transparent = true;
+			group.add(helper);
 
-						indices.push(parseInt(headData[18*i + 8]));
-						indices.push(parseInt(headData[18*i + 9]));
-						indices.push(parseInt(headData[18*i + 10]));
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.outputEncoding = THREE.sRGBEncoding;
 
-						groupColor.push(parseInt(headData[18*i + 4]));
+			container.appendChild(renderer.domElement);
+			window.addEventListener('resize', onWindowResize);
 
-						meshFaceCount += 1;
+		}
 
-					}else{
+		function onWindowResize() {
 
-						indices.push(parseInt(headData[18*i + 8]));
-						indices.push(parseInt(headData[18*i + 9]));
-						indices.push(parseInt(headData[18*i + 10]));
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
 
-						groupColor.push(parseInt(headData[18*i + 4]));
+		}
 
-						indices.push(parseInt(headData[18*i + 8]));
-						indices.push(parseInt(headData[18*i + 10]));
-						indices.push(parseInt(headData[18*i + 11]));
+		function loadGeometries(filename) {
 
-						groupColor.push(parseInt(headData[18*i + 4]));
+			const pMaterial = new THREE.PointsMaterial({
+				color: 0xFFFFFF,
+				size: 3,
+				blending: THREE.AdditiveBlending,
+				transparent: true,
+				sizeAttenuation: false
+			});
 
-						meshFaceCount += 2;
-		
-					}
-				
+			if (vertexBuffer != null) {
+				vertexBuffer.dispose();
+			}
+
+			vertexBuffer = new THREE.BufferGeometry();
+			vertexBuffer.setDrawRange(0, pointsPerHead);
+			vertexBuffer.setAttribute('position', new THREE.BufferAttribute(headVertices, 3).setUsage(THREE.DynamicDrawUsage));
+
+			pointCloud = new THREE.Points(vertexBuffer, pMaterial);
+
+			for (let i = 0; i < group.children.length; i++) {
+				if (group.children[i].type == 'Points') {
+					group.children[i].removeFromParent();
 				}
+			}
 
-				const positions = [];
-				const normals = [];
-				const colors = [];
+			group.add(pointCloud);
 
-				const color = new THREE.Color();
+			// console.log(group.children[group.children.length - 1].type, group.children);
 
-				const pA = new THREE.Vector3();
-				const pB = new THREE.Vector3();
-				const pC = new THREE.Vector3();
+			let headData = headShapes[filename.toLowerCase().replace('.dat', '')];
+			const indices = [];
+			const groupColor = [];
+			meshFaceCount = 0;
 
-				const cb = new THREE.Vector3();
-				const ab = new THREE.Vector3();
+			for (let i = 0; i < headData.length / 18; i++) {
 
-				const numFaces = 5;
-				
-				for ( let j = 0; j < numFaces; j++ ){
+				if (parseInt(headData[18 * i + 7]) == 3) {
 
-					for ( let i = 0; i < indices.length / 3; i++ ){
+					indices.push(parseInt(headData[18 * i + 8]));
+					indices.push(parseInt(headData[18 * i + 9]));
+					indices.push(parseInt(headData[18 * i + 10]));
 
-						const offset = j * pointsPerHead * 3;
+					groupColor.push(parseInt(headData[18 * i + 4]));
 
-						const ax = headVertices[3*indices[3*i] + offset];
-						const ay = headVertices[3*indices[3*i] + 1 + offset];
-						const az = headVertices[3*indices[3*i] + 2 + offset];
+					meshFaceCount += 1;
 
-						const bx = headVertices[3*indices[3*i + 1] + offset];
-						const by = headVertices[3*indices[3*i + 1] + 1 + offset];
-						const bz = headVertices[3*indices[3*i + 1] + 2 + offset];
+				} else {
 
-						const cx = headVertices[3*indices[3*i + 2] + offset];
-						const cy = headVertices[3*indices[3*i + 2] + 1 + offset];
-						const cz = headVertices[3*indices[3*i + 2] + 2 + offset];
+					indices.push(parseInt(headData[18 * i + 8]));
+					indices.push(parseInt(headData[18 * i + 9]));
+					indices.push(parseInt(headData[18 * i + 10]));
 
-						positions.push( ax, ay, az );
-						positions.push( bx, by, bz );
-						positions.push( cx, cy, cz );
+					groupColor.push(parseInt(headData[18 * i + 4]));
 
-						// flat face normals
+					indices.push(parseInt(headData[18 * i + 8]));
+					indices.push(parseInt(headData[18 * i + 10]));
+					indices.push(parseInt(headData[18 * i + 11]));
 
-						pA.set( ax, ay, az );
-						pB.set( bx, by, bz );
-						pC.set( cx, cy, cz );
+					groupColor.push(parseInt(headData[18 * i + 4]));
 
-						cb.subVectors( pC, pB );
-						ab.subVectors( pA, pB );
-						cb.cross( ab );
-
-						cb.normalize();
-
-						const nx = cb.x;
-						const ny = cb.y;
-						const nz = cb.z;
-
-						normals.push( nx, ny, nz );
-						normals.push( nx, ny, nz );
-						normals.push( nx, ny, nz );
-
-						// colors
-
-						const vx = 0.4 + groupColor[i] / 256;
-						const vy = 0.2 + groupColor[i] / 256;
-						const vz = 0.8 + groupColor[i] / 256;
-
-						color.setRGB( vx, vy, vz );
-
-						const alpha = 0.75;
-
-						colors.push( color.r, color.g, color.b, alpha );
-						colors.push( color.r, color.g, color.b, alpha );
-						colors.push( color.r, color.g, color.b, alpha );
-
-					}
+					meshFaceCount += 2;
 
 				}
 
-				if (meshBuffer != null) {
-					meshBuffer.dispose();			
+			}
+
+			const positions = [];
+			const normals = [];
+			const colors = [];
+
+			const color = new THREE.Color();
+
+			const pA = new THREE.Vector3();
+			const pB = new THREE.Vector3();
+			const pC = new THREE.Vector3();
+
+			const cb = new THREE.Vector3();
+			const ab = new THREE.Vector3();
+
+			const numFaces = 5;
+
+			for (let j = 0; j < numFaces; j++) {
+
+				for (let i = 0; i < indices.length / 3; i++) {
+
+					const offset = j * pointsPerHead * 3;
+
+					const ax = headVertices[3 * indices[3 * i] + offset];
+					const ay = headVertices[3 * indices[3 * i] + 1 + offset];
+					const az = headVertices[3 * indices[3 * i] + 2 + offset];
+
+					const bx = headVertices[3 * indices[3 * i + 1] + offset];
+					const by = headVertices[3 * indices[3 * i + 1] + 1 + offset];
+					const bz = headVertices[3 * indices[3 * i + 1] + 2 + offset];
+
+					const cx = headVertices[3 * indices[3 * i + 2] + offset];
+					const cy = headVertices[3 * indices[3 * i + 2] + 1 + offset];
+					const cz = headVertices[3 * indices[3 * i + 2] + 2 + offset];
+
+					positions.push(ax, ay, az);
+					positions.push(bx, by, bz);
+					positions.push(cx, cy, cz);
+
+					// flat face normals
+
+					pA.set(ax, ay, az);
+					pB.set(bx, by, bz);
+					pC.set(cx, cy, cz);
+
+					cb.subVectors(pC, pB);
+					ab.subVectors(pA, pB);
+					cb.cross(ab);
+
+					cb.normalize();
+
+					const nx = cb.x;
+					const ny = cb.y;
+					const nz = cb.z;
+
+					normals.push(nx, ny, nz);
+					normals.push(nx, ny, nz);
+					normals.push(nx, ny, nz);
+
+					// colors
+
+					const vx = 0.4 + groupColor[i] / 256;
+					const vy = 0.2 + groupColor[i] / 256;
+					const vz = 0.8 + groupColor[i] / 256;
+
+					color.setRGB(vx, vy, vz);
+
+					const alpha = 0.75;
+
+					colors.push(color.r, color.g, color.b, alpha);
+					colors.push(color.r, color.g, color.b, alpha);
+					colors.push(color.r, color.g, color.b, alpha);
+
 				}
 
-				meshBuffer = new THREE.BufferGeometry();
-				meshBuffer.setDrawRange( 0, 3 * meshFaceCount ); // 120 = 3 * num faces
-				meshBuffer.setAttribute( 'position', new THREE.Int16BufferAttribute( positions, 3 ));
-				meshBuffer.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ));
-				meshBuffer.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 4 ));
+			}
 
-				meshBuffer.computeBoundingSphere();
+			if (meshBuffer != null) {
+				meshBuffer.dispose();
+			}
 
-				const material = new THREE.MeshPhongMaterial( {
+			meshBuffer = new THREE.BufferGeometry();
+			meshBuffer.setDrawRange(0, 3 * meshFaceCount); // 120 = 3 * num faces
+			meshBuffer.setAttribute('position', new THREE.Int16BufferAttribute(positions, 3));
+			meshBuffer.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+			meshBuffer.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+
+			meshBuffer.computeBoundingSphere();
+
+			const material = new THREE.MeshPhongMaterial({
 				color: 0xbcbcbc, specular: 0xffffff, shininess: 250,
 				side: THREE.DoubleSide, vertexColors: true, transparent: true
-				} );
+			});
 
-				mesh = new THREE.Mesh( meshBuffer, material );
+			mesh = new THREE.Mesh(meshBuffer, material);
 
-				for ( let i = 0; i < group.children.length ; i++ ){
-					if (group.children[i].type == 'Mesh'){
-						group.children[i].removeFromParent();
-					}
+			for (let i = 0; i < group.children.length; i++) {
+				if (group.children[i].type == 'Mesh') {
+					group.children[i].removeFromParent();
 				}
-
-				group.add( mesh );
-
 			}
 
-			function animate() {
+			group.add(mesh);
 
-				if (pointCloud != null)
-                	pointCloud.geometry.attributes.position.needsUpdate = true;
+		}
 
-                requestAnimationFrame( animate );
-                render();
+		function animate() {
 
-                }
+			if (pointCloud != null)
+				pointCloud.geometry.attributes.position.needsUpdate = true;
 
-			function render() {
+			requestAnimationFrame(animate);
+			render();
 
-				renderer.render( scene, camera );
+		}
 
+		function render() {
+
+			renderer.render(scene, camera);
+
+		}
+
+		const fileSelector = document.getElementById('file-selector');
+		fileSelector.addEventListener('change', (event) => {
+
+			const fileList = event.target.files;
+			// console.log(fileList);
+			const fileData = new Blob([fileList[0]]);
+			fileSize = fileList[0].size;
+			pointsPerHead = fileSize / (2 * 3 * 5);
+
+			var reader = new FileReader();
+			reader.readAsArrayBuffer(fileData);
+
+			reader.onload = function () {
+				var arrayBuffer = reader.result
+				headVertices = new Int16Array(arrayBuffer);
+				loadGeometries(fileList[0].name);
 			}
 
-            const fileSelector = document.getElementById('file-selector');
-            fileSelector.addEventListener('change', (event) => {
-                
-                const fileList = event.target.files;
-                // console.log(fileList);
-                const fileData = new Blob([fileList[0]]);
-                fileSize = fileList[0].size;
-				pointsPerHead = fileSize / ( 2 * 3 * 5 );
+		});
 
-                var reader = new FileReader();
-                reader.readAsArrayBuffer(fileData);
+	</script>
 
-                reader.onload = function() {
-                    var arrayBuffer = reader.result
-                    headVertices = new Int16Array(arrayBuffer);
-                    loadGeometries(fileList[0].name);
-                }
-                
-            });
+</body>
 
-		</script>
-
-	</body>
 </html>
