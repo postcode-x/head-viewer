@@ -20,24 +20,27 @@
 	</div>
 
 	<div id="container"></div>
+	
 	<script type="module">
 
 		import * as THREE from './build/three.module.js';
 		import { OrbitControls } from './jsm/controls/OrbitControls.js';
 		import { GUI } from './jsm/libs/dat.gui.module.js';
 
-		let group;
-		let container;
-		let camera, scene, renderer;
+		const fileSelector = document.getElementById('file-selector');
 
-		let vertexBuffer, meshBuffer;
-		let pointCloud;
-		let mesh;
-
-		let pointsPerHead
+		let headVertices;
+		let fileSize;
+		let pointsPerHead;
 		let meshFaceCount = 0;
 
-		const r = 256;
+		let container;
+		let group, scene;
+		let camera, renderer;
+
+		let vertexBuffer, meshBuffer;
+		let headPoints;
+		let headMesh;
 
 		const effectController = {
 			showDots: true,
@@ -46,11 +49,12 @@
 			currentFace: 1
 		};
 
-		let headVertices;
-		let fileSize;
-
 		init();
-		animate();
+		loadGUI();
+        animate();
+
+        addLight();
+        loadCube();
 
 		function init() {
 
@@ -63,16 +67,57 @@
 			controls.minDistance = 100;
 			controls.maxDistance = 550;
 
+			scene = new THREE.Scene();
+			group = new THREE.Group();
+			scene.add(group);
+
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.outputEncoding = THREE.sRGBEncoding;
+			renderer.setClearColor( 0x616881, 1 );
+
+			container.appendChild(renderer.domElement);
+			window.addEventListener('resize', onWindowResize);
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+		function animate() {
+
+			if (headPoints != null)
+				headPoints.geometry.attributes.position.needsUpdate = true;
+
+			requestAnimationFrame(animate);
+			render();
+
+		}
+
+		function render() {
+
+			renderer.render(scene, camera);
+
+		}
+
+		function loadGUI(){
+
 			const gui = new GUI();
 
 			gui.add(effectController, "showDots").onChange(function (value) {
 
-				pointCloud.visible = value;
+				headPoints.visible = value;
 
 			});
 			gui.add(effectController, "showMesh").onChange(function (value) {
 
-				mesh.visible = value;
+				headMesh.visible = value;
 
 			});
 			gui.add(effectController, "disableCamera").onChange(function (value) {
@@ -92,35 +137,22 @@
 				}
 			});
 
-			scene = new THREE.Scene();
+		}
 
-			group = new THREE.Group();
-			scene.add(group);
+		function addLight(){
 
 			const light = new THREE.HemisphereLight();
 			scene.add(light);
 
-			const helper = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(r, r, r)));
+		}
+
+		function loadCube(){
+
+			const helper = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(256, 256, 256)));
 			helper.material.color.setHex(0x101010);
 			helper.material.blending = THREE.AdditiveBlending;
 			helper.material.transparent = true;
 			group.add(helper);
-
-			renderer = new THREE.WebGLRenderer({ antialias: true });
-			renderer.setPixelRatio(window.devicePixelRatio);
-			renderer.setSize(window.innerWidth, window.innerHeight);
-			renderer.outputEncoding = THREE.sRGBEncoding;
-
-			container.appendChild(renderer.domElement);
-			window.addEventListener('resize', onWindowResize);
-
-		}
-
-		function onWindowResize() {
-
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-			renderer.setSize(window.innerWidth, window.innerHeight);
 
 		}
 
@@ -141,8 +173,7 @@
 			vertexBuffer = new THREE.BufferGeometry();
 			vertexBuffer.setDrawRange(0, pointsPerHead);
 			vertexBuffer.setAttribute('position', new THREE.BufferAttribute(headVertices, 3).setUsage(THREE.DynamicDrawUsage));
-
-			pointCloud = new THREE.Points(vertexBuffer, pMaterial);
+			headPoints = new THREE.Points(vertexBuffer, pMaterial);
 
 			for (let i = 0; i < group.children.length; i++) {
 				if (group.children[i].type == 'Points') {
@@ -150,7 +181,7 @@
 				}
 			}
 
-			group.add(pointCloud);
+			group.add(headPoints);
 
 			// console.log(group.children[group.children.length - 1].type, group.children);
 
@@ -159,64 +190,13 @@
 			const groupColor = [];
 			meshFaceCount = 0;
 
-			let hd = [];
-
-			/*for (let i = 0; i < headData.length / 18; i++) {
-
-				if (parseInt(headData[18 * i + 7]) == 3) {
-
-					indices.push(parseInt(headData[18 * i + 8]));
-					indices.push(parseInt(headData[18 * i + 9]));
-					indices.push(parseInt(headData[18 * i + 10]));
-
-					groupColor.push(parseInt(headData[18 * i + 4]));
-
-					meshFaceCount += 1;
-
-					hd.push(parseInt(headData[18 * i + 4]));
-					hd.push(parseInt(headData[18 * i + 8]));
-					hd.push(parseInt(headData[18 * i + 9]));
-					hd.push(parseInt(headData[18 * i + 10]));
-
-				} else {
-
-					indices.push(parseInt(headData[18 * i + 8]));
-					indices.push(parseInt(headData[18 * i + 9]));
-					indices.push(parseInt(headData[18 * i + 10]));
-
-					groupColor.push(parseInt(headData[18 * i + 4]));
-
-					hd.push(parseInt(headData[18 * i + 4]));
-					hd.push(parseInt(headData[18 * i + 8]));
-					hd.push(parseInt(headData[18 * i + 9]));
-					hd.push(parseInt(headData[18 * i + 10]));
-
-					indices.push(parseInt(headData[18 * i + 8]));
-					indices.push(parseInt(headData[18 * i + 10]));
-					indices.push(parseInt(headData[18 * i + 11]));
-
-					groupColor.push(parseInt(headData[18 * i + 4]));
-
-					meshFaceCount += 2;
-
-					hd.push(parseInt(headData[18 * i + 4]));
-					hd.push(parseInt(headData[18 * i + 8]));
-					hd.push(parseInt(headData[18 * i + 10]));
-					hd.push(parseInt(headData[18 * i + 11]));
-
-				}
-
-			}
-
-			console.log(hd);*/
-
 			for (let i = 0; i < headData.length / 4; i++) {
 
-				groupColor.push(parseInt(headData[4 * i]));
+				groupColor.push(parseInt(headData[4 * i])); // Color
 
-				indices.push(parseInt(headData[4 * i + 1]));
-				indices.push(parseInt(headData[4 * i + 2]));
-				indices.push(parseInt(headData[4 * i + 3]));
+				indices.push(parseInt(headData[4 * i + 1])); // Triangle vertex 1
+				indices.push(parseInt(headData[4 * i + 2])); // Triangle vertex 2
+				indices.push(parseInt(headData[4 * i + 3])); // Triangle vertex 3
 
 				meshFaceCount += 1;
 			
@@ -314,7 +294,7 @@
 				side: THREE.DoubleSide, vertexColors: true, transparent: true
 			});
 
-			mesh = new THREE.Mesh(meshBuffer, material);
+			headMesh = new THREE.Mesh(meshBuffer, material);
 
 			for (let i = 0; i < group.children.length; i++) {
 				if (group.children[i].type == 'Mesh') {
@@ -322,40 +302,23 @@
 				}
 			}
 
-			group.add(mesh);
+			group.add(headMesh);
 
 		}
 
-		function animate() {
-
-			if (pointCloud != null)
-				pointCloud.geometry.attributes.position.needsUpdate = true;
-
-			requestAnimationFrame(animate);
-			render();
-
-		}
-
-		function render() {
-
-			renderer.render(scene, camera);
-
-		}
-
-		const fileSelector = document.getElementById('file-selector');
 		fileSelector.addEventListener('change', (event) => {
 
 			const fileList = event.target.files;
-			// console.log(fileList);
 			const fileData = new Blob([fileList[0]]);
+			
 			fileSize = fileList[0].size;
 			pointsPerHead = fileSize / (2 * 3 * 5);
 
-			var reader = new FileReader();
+			let reader = new FileReader();
 			reader.readAsArrayBuffer(fileData);
 
 			reader.onload = function () {
-				var arrayBuffer = reader.result
+				let arrayBuffer = reader.result
 				headVertices = new Int16Array(arrayBuffer);
 				loadGeometries(fileList[0].name);
 			}

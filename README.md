@@ -1,7 +1,14 @@
 # head-viewer
-Head Viewer for the game **4d Sports Boxing**. Made in [three.js](https://threejs.org/)
 
-You can see it action [here](https://postcode-x.web.app/head-viewer/)
+Código completo del tutorial para Graficar Objetos Tridimensionales Usando Three.js.
+
+[Primera parte](https://postcode-x.web.app/posts/graficar-objetos-3d-usando-threejs-primera-parte/)
+
+[Segunda parte](https://postcode-x.web.app/posts/graficar-objetos-3d-usando-threejs-segunda-parte/)
 
 
-![alt-text](https://github.com/postcode-x/head-viewer/blob/main/screenshot/screencapture-127-0-0-1-5500-2021-06-12-01_57_57.png)
+![alt-text](https://github.com/postcode-x/head-viewer/blob/main/screenshot/captura.png)
+
+
+Puedes ver este programa en acción [aquí](https://postcode-x.web.app/head-viewer/)
+
