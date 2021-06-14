@@ -20,7 +20,7 @@
 	</div>
 
 	<div id="container"></div>
-	
+
 	<script type="module">
 
 		import * as THREE from './build/three.module.js';
@@ -51,10 +51,10 @@
 
 		init();
 		loadGUI();
-        animate();
+		animate();
 
-        addLight();
-        loadCube();
+		addLight();
+		loadCube();
 
 		function init() {
 
@@ -75,7 +75,7 @@
 			renderer.setPixelRatio(window.devicePixelRatio);
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			renderer.outputEncoding = THREE.sRGBEncoding;
-			renderer.setClearColor( 0x616881, 1 );
+			renderer.setClearColor(0x616881, 1);
 
 			container.appendChild(renderer.domElement);
 			window.addEventListener('resize', onWindowResize);
@@ -106,7 +106,7 @@
 
 		}
 
-		function loadGUI(){
+		function loadGUI() {
 
 			const gui = new GUI();
 
@@ -139,14 +139,14 @@
 
 		}
 
-		function addLight(){
+		function addLight() {
 
 			const light = new THREE.HemisphereLight();
 			scene.add(light);
 
 		}
 
-		function loadCube(){
+		function loadCube() {
 
 			const helper = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(256, 256, 256)));
 			helper.material.color.setHex(0x101010);
@@ -199,7 +199,7 @@
 				indices.push(parseInt(headData[4 * i + 3])); // Triangle vertex 3
 
 				meshFaceCount += 1;
-			
+
 			}
 
 			const positions = [];
@@ -310,7 +310,7 @@
 
 			const fileList = event.target.files;
 			const fileData = new Blob([fileList[0]]);
-			
+
 			fileSize = fileList[0].size;
 			pointsPerHead = fileSize / (2 * 3 * 5);
 
