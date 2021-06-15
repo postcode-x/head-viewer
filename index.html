@@ -41,10 +41,12 @@
 		let vertexBuffer, meshBuffer;
 		let headPoints, headMesh;
 
+		let controls;
+
 		const effectController = {
 			showDots: true,
 			showMesh: true,
-			disableCamera: true,
+			enableCamera: true,
 			currentFace: 1
 		};
 
@@ -62,7 +64,7 @@
 			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
 			camera.position.z = 550;
 
-			const controls = new OrbitControls(camera, container);
+			controls = new OrbitControls(camera, container);
 			controls.minDistance = 100;
 			controls.maxDistance = 550;
 
@@ -116,7 +118,7 @@
 				headMesh.visible = value;
 
 			});
-			gui.add(effectController, "disableCamera").onChange(function (value) {
+			gui.add(effectController, "enableCamera").onChange(function (value) {
 
 				controls.enabled = value;
 
