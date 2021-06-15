@@ -39,8 +39,7 @@
 		let camera, renderer;
 
 		let vertexBuffer, meshBuffer;
-		let headPoints;
-		let headMesh;
+		let headPoints, headMesh;
 
 		const effectController = {
 			showDots: true,
@@ -53,8 +52,8 @@
 		loadGUI();
 		animate();
 
-		addLight();
 		loadCube();
+		addLight();
 
 		function init() {
 
@@ -91,9 +90,6 @@
 		}
 
 		function animate() {
-
-			if (headPoints != null)
-				headPoints.geometry.attributes.position.needsUpdate = true;
 
 			requestAnimationFrame(animate);
 			render();
@@ -152,13 +148,13 @@
 			helper.material.color.setHex(0x101010);
 			helper.material.blending = THREE.AdditiveBlending;
 			helper.material.transparent = true;
-			group.add(helper);
+			scene.add(helper);
 
 		}
 
 		function loadGeometries(filename) {
 
-			const pMaterial = new THREE.PointsMaterial({
+			let pMaterial = new THREE.PointsMaterial({
 				color: 0xFFFFFF,
 				size: 3,
 				blending: THREE.AdditiveBlending,
@@ -186,8 +182,8 @@
 			// console.log(group.children[group.children.length - 1].type, group.children);
 
 			let headData = headShapes[filename.toLowerCase().replace('.dat', '')];
-			const indices = [];
-			const groupColor = [];
+			let indices = [];
+			let groupColor = [];
 			meshFaceCount = 0;
 
 			for (let i = 0; i < headData.length / 4; i++) {
@@ -202,38 +198,38 @@
 
 			}
 
-			const positions = [];
-			const normals = [];
-			const colors = [];
+			let positions = [];
+			let normals = [];
+			let colors = [];
 
-			const color = new THREE.Color();
+			let color = new THREE.Color();
 
-			const pA = new THREE.Vector3();
-			const pB = new THREE.Vector3();
-			const pC = new THREE.Vector3();
+			let pA = new THREE.Vector3();
+			let pB = new THREE.Vector3();
+			let pC = new THREE.Vector3();
 
-			const cb = new THREE.Vector3();
-			const ab = new THREE.Vector3();
+			let cb = new THREE.Vector3();
+			let ab = new THREE.Vector3();
 
-			const numExpressions = 5;
+			let numExpressions = 5;
 
 			for (let j = 0; j < numExpressions; j++) {
 
 				for (let i = 0; i < indices.length / 3; i++) {
 
-					const offset = j * pointsPerHead * 3;
+					let offset = j * pointsPerHead * 3;
 
-					const ax = headVertices[3 * indices[3 * i] + offset];
-					const ay = headVertices[3 * indices[3 * i] + 1 + offset];
-					const az = headVertices[3 * indices[3 * i] + 2 + offset];
+					let ax = headVertices[3 * indices[3 * i] + offset];
+					let ay = headVertices[3 * indices[3 * i] + 1 + offset];
+					let az = headVertices[3 * indices[3 * i] + 2 + offset];
 
-					const bx = headVertices[3 * indices[3 * i + 1] + offset];
-					const by = headVertices[3 * indices[3 * i + 1] + 1 + offset];
-					const bz = headVertices[3 * indices[3 * i + 1] + 2 + offset];
+					let bx = headVertices[3 * indices[3 * i + 1] + offset];
+					let by = headVertices[3 * indices[3 * i + 1] + 1 + offset];
+					let bz = headVertices[3 * indices[3 * i + 1] + 2 + offset];
 
-					const cx = headVertices[3 * indices[3 * i + 2] + offset];
-					const cy = headVertices[3 * indices[3 * i + 2] + 1 + offset];
-					const cz = headVertices[3 * indices[3 * i + 2] + 2 + offset];
+					let cx = headVertices[3 * indices[3 * i + 2] + offset];
+					let cy = headVertices[3 * indices[3 * i + 2] + 1 + offset];
+					let cz = headVertices[3 * indices[3 * i + 2] + 2 + offset];
 
 					positions.push(ax, ay, az);
 					positions.push(bx, by, bz);
@@ -251,9 +247,9 @@
 
 					cb.normalize();
 
-					const nx = cb.x;
-					const ny = cb.y;
-					const nz = cb.z;
+					let nx = cb.x;
+					let ny = cb.y;
+					let nz = cb.z;
 
 					normals.push(nx, ny, nz);
 					normals.push(nx, ny, nz);
@@ -261,13 +257,13 @@
 
 					// colors
 
-					const vx = 0.4 + groupColor[i] / 256;
-					const vy = 0.2 + groupColor[i] / 256;
-					const vz = 0.8 + groupColor[i] / 256;
+					let vx = 0.4 + groupColor[i] / 256;
+					let vy = 0.2 + groupColor[i] / 256;
+					let vz = 0.8 + groupColor[i] / 256;
 
 					color.setRGB(vx, vy, vz);
 
-					const alpha = 0.75;
+					let alpha = 0.75;
 
 					colors.push(color.r, color.g, color.b, alpha);
 					colors.push(color.r, color.g, color.b, alpha);
@@ -276,6 +272,12 @@
 				}
 
 			}
+
+			let material = new THREE.MeshPhongMaterial({
+				color: 0xbcbcbc, specular: 0xffffff, shininess: 250,
+				side: THREE.DoubleSide, vertexColors: true, transparent: true
+			});
+
 
 			if (meshBuffer != null) {
 				meshBuffer.dispose();
@@ -286,13 +288,7 @@
 			meshBuffer.setAttribute('position', new THREE.Int16BufferAttribute(positions, 3));
 			meshBuffer.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
 			meshBuffer.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
-
 			meshBuffer.computeBoundingSphere();
-
-			const material = new THREE.MeshPhongMaterial({
-				color: 0xbcbcbc, specular: 0xffffff, shininess: 250,
-				side: THREE.DoubleSide, vertexColors: true, transparent: true
-			});
 
 			headMesh = new THREE.Mesh(meshBuffer, material);
 
@@ -308,8 +304,8 @@
 
 		fileSelector.addEventListener('change', (event) => {
 
-			const fileList = event.target.files;
-			const fileData = new Blob([fileList[0]]);
+			let fileList = event.target.files;
+			let fileData = new Blob([fileList[0]]);
 
 			fileSize = fileList[0].size;
 			pointsPerHead = fileSize / (2 * 3 * 5);
